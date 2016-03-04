@@ -7,7 +7,7 @@ var fs = require('fs');
 var process = require('process');
 
 function gen_toc_line(heading) {
-	return '<a class="tocline tocline_' + heading.level + '">' + heading.title + '</a>';
+	return '<a class="tocline_' + heading.level + '" href="#' + heading.id + '">' + heading.title + '</a>';
 }
 
 function gen_toc(headings) {
@@ -28,12 +28,13 @@ function add_toc(html) {
 		headings.push({
 			id: id,
 			title: title,
+			level: level,
 		});
 		return '<h' + hnum + ' id="' + id + '">' + title + '<';
 	});
 	var toc = gen_toc(headings);
-	html.replace(/(<!--TOC-->)[\s\S]*(<!--\/TOC-->)/, function(_, tocstart, tocend) {
-		return tocstart + toc + tocend;
+	html = html.replace(/(<!--TOC-->)[\s\S]*(<!--\/TOC-->)/, function(_, tocstart, tocend) {
+		return tocstart + '\n' + toc + '\n' + tocend;
 	});
 	return html;
 }
@@ -50,9 +51,11 @@ function main() {
 	var tmp_filename = filename + '.tmp';
 
 	var html = fs.readFileSync(filename, {encoding: 'utf8'});
-	html = add_toc(html);
-	fs.writeFileSync(tmp_filename);
-	fs.move(tmp_filename, filename);
+	var out = add_toc(html);
+	if (html !== out) {
+		fs.writeFileSync(tmp_filename, out, {encoding: 'utf8'});
+		fs.rename(tmp_filename, filename);
+	}
 }
 
 main();
